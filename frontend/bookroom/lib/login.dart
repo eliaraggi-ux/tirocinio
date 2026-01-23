@@ -1,8 +1,52 @@
 import 'package:bookroom/registrati.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:bookroom/homepage.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  final supabase = Supabase.instance.client;
+
+  // FUNZIONE ACCEDERE UTENTE
+  Future<void> accediUtente() async {
+    try {
+      // 1️⃣ Accedere utente in Auth
+      final response = await supabase.auth.signInWithPassword(
+        email: emailController.text,
+        password: passwordController.text,
+      );
+
+      final user = response.user;
+      if (user == null) throw "Errore nell'accesso dell'utente";
+
+      // Notifica avvenuta registrazione
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Accesso completato!")),
+      );
+
+      // Vai al Homepage
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const Homepage()),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Le password non coincidono")),
+      );
+      return;
+    }
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +93,7 @@ class LoginPage extends StatelessWidget {
 
                 // Campo Email
                 TextField(
+                  controller: emailController,
                   decoration: InputDecoration(
                     labelText: "Email",
                     hintText: "your@email.com",
@@ -62,6 +107,7 @@ class LoginPage extends StatelessWidget {
 
                 // Campo Password
                 TextField(
+                  controller: passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: "Password",
@@ -89,7 +135,7 @@ class LoginPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: accediUtente,
                     child: const Text(
                       "Login",
                       style: TextStyle(
