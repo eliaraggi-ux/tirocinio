@@ -37,7 +37,7 @@ class _LoginPageState extends State<LoginPage> {
       // Vai al Homepage
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const Homepage()),
+        MaterialPageRoute(builder: (context) => const AvailableTablesPage()),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
