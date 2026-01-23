@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:bookroom/impostazioni.dart';
+import 'package:bookroom/prenotazioni.dart';
+
 
 class AvailableTablesPage extends StatefulWidget {
   const AvailableTablesPage({super.key});
@@ -8,31 +12,63 @@ class AvailableTablesPage extends StatefulWidget {
 }
 
 class _AvailableTablesPageState extends State<AvailableTablesPage> {
-  int selectedFilter = 0;
+  final supabase = Supabase.instance.client;
 
-  final List<String> filters = [
-    "All Tables",
-    "2–4 People",
-    "Large Groups",
-    "Outdoor",
-  ];
+  int _currentIndex = 0;
+  bool isLoading = true;
+  List<Map<String, dynamic>> tables = [];
 
-  final List<Map<String, dynamic>> tables = [
-    {"table": "Table 1", "people": "4 people"},
-    {"table": "Table 4", "people": "2 people"},
-    {"table": "Table 7", "people": "6 people"},
-    {"table": "Table 12", "people": "2 people"},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    fetchTables();
+  }
+
+  Future<void> fetchTables() async {
+    try {
+      final response = await supabase
+          .from('prenotazioni')
+          .select('*')
+          .eq('disponibile', true);
+
+      setState(() {
+        tables = List<Map<String, dynamic>>.from(response);
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Errore caricamento stanze: $e');
+    }
+  }
+
+  void onNavTap(int index) {
+    if (index == _currentIndex) return;
+
+    if (index == 1) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const BookedeTablesPage()),
+      );
+    }
+
+    if (index == 2) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const SettingsPage()),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // BOTTOM NAVIGATION BAR
+      // 🔽 BOTTOM NAV BAR
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
         selectedItemColor: const Color(0xFF2BB9A9),
         unselectedItemColor: Colors.grey,
+        onTap: onNavTap,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -40,11 +76,11 @@ class _AvailableTablesPageState extends State<AvailableTablesPage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_month),
-            label: "Bookings",
+            label: "Prenotazioni",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
-            label: "Settings",
+            label: "Impostazioni",
           ),
         ],
       ),
@@ -57,9 +93,8 @@ class _AvailableTablesPageState extends State<AvailableTablesPage> {
             children: [
               const SizedBox(height: 20),
 
-              // HEADER
               const Text(
-                "CURRENT STATUS",
+                "STATO CORRENTE",
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
@@ -68,7 +103,7 @@ class _AvailableTablesPageState extends State<AvailableTablesPage> {
               ),
               const SizedBox(height: 5),
               const Text(
-                "Available Tables",
+                "Tavoli Disponibili",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -77,120 +112,79 @@ class _AvailableTablesPageState extends State<AvailableTablesPage> {
 
               const SizedBox(height: 25),
 
-              // FILTER BUTTONS
-              SizedBox(
-                height: 40,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: filters.length,
-                  itemBuilder: (context, index) {
-                    final bool isSelected = selectedFilter == index;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedFilter = index;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(0xFF2BB9A9)
-                                : Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Center(
-                            child: Text(
-                              filters[index],
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.black,
-                                fontWeight:
-                                    isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 25),
-
-              // TABLE LIST
+              // 📦 LISTA STANZE
               Expanded(
-                child: ListView.builder(
-                  itemCount: tables.length,
-                  itemBuilder: (context, index) {
-                    final table = tables[index];
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : tables.isEmpty
+                        ? const Center(child: Text("Nessun tavolo disponibile"))
+                        : ListView.builder(
+                            itemCount: tables.length,
+                            itemBuilder: (context, index) {
+                              final table = tables[index];
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          // Placeholder immagine tavolo
-                          Container(
-                            width: 70,
-                            height: 70,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-
-                          const SizedBox(width: 15),
-
-                          // Info tavolo
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                table["table"],
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 20),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                table["people"],
-                                style: const TextStyle(
-                                  color: Colors.grey,
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 70,
+                                      height: 70,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade300,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+
+                                    const SizedBox(width: 15),
+
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          table['nome'],
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${table['capienza']} persone',
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    const Spacer(),
+
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFF2BB9A9),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        // 👉 qui andrà la prenotazione
+                                      },
+                                      child: const Text("Book Now"),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
-
-                          const Spacer(),
-
-                          // BOOK NOW BUTTON
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2BB9A9),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            onPressed: () {},
-                            child: const Text("Book Now"),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
               ),
             ],
           ),
