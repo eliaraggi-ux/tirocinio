@@ -1,3 +1,4 @@
+import 'package:bookroom/registrati.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatelessWidget {
@@ -124,7 +125,12 @@ class LoginPage extends StatelessWidget {
                   children: [
                     const Text("Non hai un account? "),
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => Registrati()),
+                      );
+                      },
                       child: const Text(
                         "Registrati",
                         style: TextStyle(
